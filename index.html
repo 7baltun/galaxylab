@@ -41,6 +41,9 @@
             padding: 15px;
             border-radius: 10px;
             backdrop-filter: blur(5px);
+            max-height: 80vh;
+            overflow-y: auto;
+            min-width: 280px;
         }
         
         .control-item {
@@ -51,7 +54,12 @@
         }
         
         input[type="range"] {
-            width: 120px;
+            width: 150px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
         }
         
         button {
@@ -76,6 +84,7 @@
             color: white;
             font-size: 18px;
             z-index: 200;
+            display: none;
         }
     </style>
 </head>
@@ -86,6 +95,14 @@
             <h3>🌌 3D Galaxy Explorer</h3>
             <p>Звезд: <span id="starCount">0</span></p>
             <p>Расстояние: <span id="distance">0</span></p>
+            <hr style="border: 1px solid rgba(255,255,255,0.3); margin: 10px 0;">
+            <div style="font-size: 12px; opacity: 0.8;">
+                <p><strong>Управление:</strong></p>
+                <p>🖱️ Мышь: Вращение экранных осей</p>
+                <p>⚡ Ctrl+мышь: Вращение осей галактики</p>
+                <p>🔧 Shift+мышь: Точное вращение</p>
+                <p>🔍 Колесо: Масштаб</p>
+            </div>
         </div>
         
         <div id="controls">
@@ -94,18 +111,65 @@
                 <input type="range" id="rotationSpeed" min="0" max="2" step="0.1" value="0.5">
             </div>
             <div class="control-item">
+                <label>Размер галактики: <span id="galaxySizeValue">1.0</span></label>
+                <input type="range" id="galaxySizeSlider" min="0.3" max="3.0" step="0.1" value="1.0">
+            </div>
+            <div class="control-item">
+                <label>Количество звезд: <span id="starCountValue">300</span></label>
+                <input type="range" id="starCountSlider" min="0" max="15000" step="50" value="300">
+            </div>
+            <div class="control-item">
+                <label>Количество рукавов: <span id="armCountValue">4</span></label>
+                <input type="range" id="armCountSlider" min="2" max="8" step="1" value="4">
+            </div>
+            <div class="control-item">
+                <label>Закручивание рукавов: <span id="spiralTightnessValue">0.8</span></label>
+                <input type="range" id="spiralTightnessSlider" min="0.1" max="3.0" step="0.1" value="0.8">
+            </div>
+            <div class="control-item">
+                <label>Ядро %: <span id="coreRatioValue">25</span></label>
+                <input type="range" id="coreRatioSlider" min="10" max="50" step="1" value="25">
+            </div>
+            <div class="control-item">
+                <label>Гало %: <span id="haloRatioValue">15</span></label>
+                <input type="range" id="haloRatioSlider" min="5" max="30" step="1" value="15">
+            </div>
+            <div class="control-item">
+                <label>Хаос: <span id="chaosValue">0.5</span></label>
+                <input type="range" id="chaosSlider" min="0" max="2.0" step="0.1" value="0.5">
+            </div>
+            <div class="control-item">
+                <label>Уплощение галактики: <span id="flatteningValue">0.3</span></label>
+                <input type="range" id="flatteningSlider" min="0.1" max="1.0" step="0.05" value="0.3">
+            </div>
+            <div class="control-item">
                 <label>Размер звезд:</label>
                 <input type="range" id="starSize" min="0.5" max="3" step="0.1" value="1">
             </div>
             <div class="control-item">
-                <label>Количество звезд: <span id="starCountValue">8000</span></label>
-                <input type="range" id="starCountSlider" min="0" max="15000" step="100" value="8000">
+                <label>Туманность</label>
+                <input type="checkbox" id="nebulaToggle" style="margin-left: auto;">
             </div>
+            <div class="control-item">
+                <label>Прозрачность туманности: <span id="nebulaOpacityValue">5</span>%</label>
+                <input type="range" id="nebulaOpacitySlider" min="0" max="20" step="1" value="5">
+            </div>
+            <hr style="border: 1px solid rgba(255,255,255,0.3); margin: 15px 0;">
+            <div class="control-item">
+                <label>Поворот X: <span id="rotationXValue">0</span>°</label>
+                <input type="range" id="rotationXSlider" min="-180" max="180" step="5" value="0">
+            </div>
+            <div class="control-item">
+                <label>Поворот Y: <span id="rotationYValue">0</span>°</label>
+                <input type="range" id="rotationYSlider" min="-180" max="180" step="5" value="0">
+            </div>
+            <div class="control-item">
+                <label>Поворот Z: <span id="rotationZValue">0</span>°</label>
+                <input type="range" id="rotationZSlider" min="-180" max="180" step="5" value="0">
+            </div>
+            <hr style="border: 1px solid rgba(255,255,255,0.3); margin: 15px 0;">
             <div class="control-item">
                 <button id="regenerate">Новая галактика</button>
-            </div>
-            <div class="control-item">
-                <button id="toggleNebula">Туманность</button>
             </div>
         </div>
     </div>
@@ -125,9 +189,19 @@
                 this.cameraDistance = 300;
                 this.rotationSpeed = 0.005;
                 this.starSize = 1;
-                this.showNebula = true;
-                this.totalStarCount = 8000;
+                this.showNebula = false;
+                this.totalStarCount = 300;
                 this.regenerateTimeout = null;
+                
+                // New galaxy parameters
+                this.armCount = 4;
+                this.galaxySize = 1.0;
+                this.spiralTightness = 0.8;
+                this.flattening = 0.3;
+                this.coreRatio = 0.25;
+                this.haloRatio = 0.15;
+                this.chaosLevel = 0.5;
+                this.nebulaOpacity = 0.05;
                 
                 this.init();
                 this.generateGalaxy();
@@ -184,8 +258,36 @@
                         const deltaX = event.clientX - this.mouse.x;
                         const deltaY = event.clientY - this.mouse.y;
                         
-                        this.galaxyGroup.rotation.y += deltaX * 0.01;
-                        this.galaxyGroup.rotation.x += deltaY * 0.01;
+                        // Проверяем нажатие клавиш модификаторов
+                        if (event.ctrlKey) {
+                            // Ctrl + мышь = вращение вокруг локальных осей галактики
+                            const localYAxis = new THREE.Vector3(0, 1, 0); // ось перпендикулярная диску
+                            const localZAxis = new THREE.Vector3(0, 0, 1); // ось в плоскости диска
+                            
+                            // Горизонтальное движение = вращение вокруг локальной Y оси галактики
+                            this.galaxyGroup.rotateOnAxis(localYAxis, deltaX * 0.01);
+                            // Вертикальное движение = вращение вокруг локальной Z оси галактики
+                            this.galaxyGroup.rotateOnAxis(localZAxis, deltaY * 0.01);
+                        } else if (event.shiftKey) {
+                            // Shift + мышь = более медленное и точное вращение вокруг экранных осей
+                            this.galaxyGroup.rotation.y += deltaX * 0.005; // вокруг Y экрана
+                            this.galaxyGroup.rotation.x += deltaY * 0.005; // вокруг X экрана
+                        } else {
+                            // Обычное вращение вокруг глобальных экранных осей
+                            // Горизонталь = вращение вокруг глобальной Y оси экрана (всегда вертикальна)
+                            // Вертикаль = вращение вокруг глобальной X оси экрана (всегда горизонтальна)
+                            
+                            // Создаем векторы глобальных осей экрана
+                            const screenYAxis = new THREE.Vector3(0, 1, 0); // всегда вертикальна относительно экрана
+                            const screenXAxis = new THREE.Vector3(1, 0, 0); // всегда горизонтальна относительно экрана
+                            
+                            // Применяем вращения в мировых координатах
+                            this.galaxyGroup.rotateOnWorldAxis(screenYAxis, deltaX * 0.01);
+                            this.galaxyGroup.rotateOnWorldAxis(screenXAxis, deltaY * 0.01);
+                        }
+                        
+                        // Обновляем значения ползунков
+                        this.updateRotationSliders();
                         
                         this.mouse.x = event.clientX;
                         this.mouse.y = event.clientY;
@@ -207,14 +309,14 @@
             }
             
             generateGalaxy() {
-                // Clear existing stars
-                this.stars.forEach(star => this.galaxyGroup.remove(star));
-                this.stars = [];
-                
-                if (this.nebula) {
-                    this.galaxyGroup.remove(this.nebula);
-                    this.nebula = null;
+                // Clear all existing objects from galaxy group (stars, glows, nebula)
+                while (this.galaxyGroup.children.length > 0) {
+                    this.galaxyGroup.remove(this.galaxyGroup.children[0]);
                 }
+                
+                // Reset arrays and references
+                this.stars = [];
+                this.nebula = null;
                 
                 // Generate spiral galaxy structure
                 this.createSpiralArms();
@@ -227,22 +329,22 @@
             }
             
             createSpiralArms() {
-                const armCount = 4;
-                // Распределяем 60% от общего количества звезд между спиральными рукавами
-                const totalSpiralStars = Math.floor(this.totalStarCount * 0.6);
-                const starsPerArm = Math.floor(totalSpiralStars / armCount);
+                // Вычисляем количество звезд для спиральных рукавов
+                const spiralRatio = 1.0 - this.coreRatio - this.haloRatio;
+                const totalSpiralStars = Math.floor(this.totalStarCount * spiralRatio);
+                const starsPerArm = Math.floor(totalSpiralStars / this.armCount);
                 
-                for (let arm = 0; arm < armCount; arm++) {
-                    const armAngle = (arm / armCount) * Math.PI * 2;
+                for (let arm = 0; arm < this.armCount; arm++) {
+                    const armAngle = (arm / this.armCount) * Math.PI * 2;
                     
                     for (let i = 0; i < starsPerArm; i++) {
                         const t = i / starsPerArm;
-                        const radius = 20 + t * 150;
-                        const angle = armAngle + t * Math.PI * 4 + Math.random() * 0.5;
+                        const radius = (20 + t * 150) * this.galaxySize;
+                        const angle = armAngle + t * Math.PI * this.spiralTightness * 2 + Math.random() * 0.5 * this.chaosLevel;
                         
-                        const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 20;
-                        const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 20;
-                        const y = (Math.random() - 0.5) * 10 * (1 - t * 0.7);
+                        const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
+                        const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
+                        const y = (Math.random() - 0.5) * 10 * (1 - t * 0.7) * this.flattening;
                         
                         this.createStar(x, y, z, this.getStarColor(t), Math.random() * 2 + 0.5);
                     }
@@ -250,36 +352,48 @@
             }
             
             createGalacticCore() {
-                // 25% от общего количества звезд в ядре
-                const coreStars = Math.floor(this.totalStarCount * 0.25);
+                // Используем динамическое соотношение для ядра
+                const coreStars = Math.floor(this.totalStarCount * this.coreRatio);
                 
                 for (let i = 0; i < coreStars; i++) {
                     const phi = Math.random() * Math.PI * 2;
                     const theta = Math.random() * Math.PI;
-                    const radius = Math.random() * 30;
+                    const radius = Math.random() * 30 * this.galaxySize;
                     
                     const x = radius * Math.sin(theta) * Math.cos(phi);
-                    const y = radius * Math.sin(theta) * Math.sin(phi) * 0.3;
+                    const y = radius * Math.sin(theta) * Math.sin(phi) * this.flattening;
                     const z = radius * Math.cos(theta);
                     
-                    this.createStar(x, y, z, 0xffffff, Math.random() * 3 + 1);
+                    // Добавляем немного хаоса в расположение
+                    const chaosOffset = this.chaosLevel * 5;
+                    const finalX = x + (Math.random() - 0.5) * chaosOffset;
+                    const finalY = y + (Math.random() - 0.5) * chaosOffset * this.flattening;
+                    const finalZ = z + (Math.random() - 0.5) * chaosOffset;
+                    
+                    this.createStar(finalX, finalY, finalZ, 0xffffff, Math.random() * 3 + 1);
                 }
             }
             
             createHalo() {
-                // 15% от общего количества звезд в гало
-                const haloStars = Math.floor(this.totalStarCount * 0.15);
+                // Используем динамическое соотношение для гало
+                const haloStars = Math.floor(this.totalStarCount * this.haloRatio);
                 
                 for (let i = 0; i < haloStars; i++) {
                     const phi = Math.random() * Math.PI * 2;
                     const theta = Math.random() * Math.PI;
-                    const radius = 100 + Math.random() * 200;
+                    const radius = (100 + Math.random() * 200) * this.galaxySize;
                     
                     const x = radius * Math.sin(theta) * Math.cos(phi);
-                    const y = radius * Math.sin(theta) * Math.sin(phi);
+                    const y = radius * Math.sin(theta) * Math.sin(phi); // убираем влияние уплощения для гало
                     const z = radius * Math.cos(theta);
                     
-                    this.createStar(x, y, z, 0x4444ff, Math.random() * 1 + 0.3);
+                    // Добавляем хаос в расположение (без уплощения для гало)
+                    const chaosOffset = this.chaosLevel * 20;
+                    const finalX = x + (Math.random() - 0.5) * chaosOffset;
+                    const finalY = y + (Math.random() - 0.5) * chaosOffset; // хаос без уплощения
+                    const finalZ = z + (Math.random() - 0.5) * chaosOffset;
+                    
+                    this.createStar(finalX, finalY, finalZ, 0x4444ff, Math.random() * 1 + 0.3);
                 }
             }
             
@@ -314,11 +428,11 @@
             createNebula() {
                 if (!this.showNebula) return;
                 
-                const nebulaGeometry = new THREE.SphereGeometry(200, 32, 32);
+                const nebulaGeometry = new THREE.SphereGeometry(200 * this.galaxySize, 32, 32);
                 const nebulaMaterial = new THREE.MeshBasicMaterial({
                     color: 0x6633cc,
                     transparent: true,
-                    opacity: 0.05,
+                    opacity: this.nebulaOpacity,
                     side: THREE.BackSide
                 });
                 
@@ -341,6 +455,17 @@
             }
             
             setupControls() {
+                // Вспомогательная функция для регенерации с задержкой
+                const scheduleRegeneration = () => {
+                    if (this.regenerateTimeout) {
+                        clearTimeout(this.regenerateTimeout);
+                    }
+                    this.regenerateTimeout = setTimeout(() => {
+                        document.getElementById('loading').style.display = 'block';
+                        setTimeout(() => this.generateGalaxy(), 100);
+                    }, 1000);
+                };
+                
                 document.getElementById('rotationSpeed').addEventListener('input', (e) => {
                     this.rotationSpeed = parseFloat(e.target.value) * 0.01;
                 });
@@ -353,27 +478,99 @@
                 document.getElementById('starCountSlider').addEventListener('input', (e) => {
                     this.totalStarCount = parseInt(e.target.value);
                     document.getElementById('starCountValue').textContent = this.totalStarCount;
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('armCountSlider').addEventListener('input', (e) => {
+                    this.armCount = parseInt(e.target.value);
+                    document.getElementById('armCountValue').textContent = this.armCount;
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('galaxySizeSlider').addEventListener('input', (e) => {
+                    this.galaxySize = parseFloat(e.target.value);
+                    document.getElementById('galaxySizeValue').textContent = this.galaxySize.toFixed(1);
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('spiralTightnessSlider').addEventListener('input', (e) => {
+                    this.spiralTightness = parseFloat(e.target.value);
+                    document.getElementById('spiralTightnessValue').textContent = this.spiralTightness.toFixed(1);
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('flatteningSlider').addEventListener('input', (e) => {
+                    this.flattening = parseFloat(e.target.value);
+                    document.getElementById('flatteningValue').textContent = this.flattening.toFixed(2);
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('coreRatioSlider').addEventListener('input', (e) => {
+                    const corePercent = parseInt(e.target.value);
+                    this.coreRatio = corePercent / 100;
+                    document.getElementById('coreRatioValue').textContent = corePercent;
                     
-                    // Очищаем предыдущий таймер
-                    if (this.regenerateTimeout) {
-                        clearTimeout(this.regenerateTimeout);
+                    // Автоматически корректируем гало, чтобы сумма не превышала 100%
+                    const maxHalo = 95 - corePercent;
+                    const currentHalo = Math.round(this.haloRatio * 100);
+                    if (currentHalo > maxHalo) {
+                        this.haloRatio = maxHalo / 100;
+                        document.getElementById('haloRatioValue').textContent = maxHalo;
+                        document.getElementById('haloRatioSlider').value = maxHalo;
                     }
+                    scheduleRegeneration();
+                });
+                
+                document.getElementById('haloRatioSlider').addEventListener('input', (e) => {
+                    const haloPercent = parseInt(e.target.value);
+                    this.haloRatio = haloPercent / 100;
+                    document.getElementById('haloRatioValue').textContent = haloPercent;
                     
-                    // Устанавливаем новый таймер с задержкой в 1 секунду
-                    this.regenerateTimeout = setTimeout(() => {
-                        document.getElementById('loading').style.display = 'block';
-                        setTimeout(() => this.generateGalaxy(), 100);
-                    }, 1000);
+                    // Автоматически корректируем ядро, чтобы сумма не превышала 100%
+                    const maxCore = 95 - haloPercent;
+                    const currentCore = Math.round(this.coreRatio * 100);
+                    if (currentCore > maxCore) {
+                        this.coreRatio = maxCore / 100;
+                        document.getElementById('coreRatioValue').textContent = maxCore;
+                        document.getElementById('coreRatioSlider').value = maxCore;
+                    }
+                    scheduleRegeneration();
                 });
                 
-                document.getElementById('starCount').addEventListener('input', (e) => {
-                    this.totalStarCount = parseInt(e.target.value);
-                    document.getElementById('starCountValue').textContent = this.totalStarCount;
+                document.getElementById('chaosSlider').addEventListener('input', (e) => {
+                    this.chaosLevel = parseFloat(e.target.value);
+                    document.getElementById('chaosValue').textContent = this.chaosLevel.toFixed(1);
+                    scheduleRegeneration();
                 });
                 
-                document.getElementById('chaosLevel').addEventListener('input', (e) => {
-                    this.chaosLevel = parseInt(e.target.value) / 100;
-                    document.getElementById('chaosValue').textContent = e.target.value + '%';
+                document.getElementById('nebulaOpacitySlider').addEventListener('input', (e) => {
+                    const opacity = parseInt(e.target.value);
+                    this.nebulaOpacity = opacity / 100;
+                    document.getElementById('nebulaOpacityValue').textContent = opacity;
+                    
+                    // Обновляем туманность в реальном времени без регенерации
+                    if (this.nebula && this.showNebula) {
+                        this.nebula.material.opacity = this.nebulaOpacity;
+                    }
+                });
+                
+                // Ползунки прямого управления поворотом
+                document.getElementById('rotationXSlider').addEventListener('input', (e) => {
+                    const degrees = parseInt(e.target.value);
+                    this.galaxyGroup.rotation.x = degrees * Math.PI / 180;
+                    document.getElementById('rotationXValue').textContent = degrees;
+                });
+                
+                document.getElementById('rotationYSlider').addEventListener('input', (e) => {
+                    const degrees = parseInt(e.target.value);
+                    this.galaxyGroup.rotation.y = degrees * Math.PI / 180;
+                    document.getElementById('rotationYValue').textContent = degrees;
+                });
+                
+                document.getElementById('rotationZSlider').addEventListener('input', (e) => {
+                    const degrees = parseInt(e.target.value);
+                    this.galaxyGroup.rotation.z = degrees * Math.PI / 180;
+                    document.getElementById('rotationZValue').textContent = degrees;
                 });
                 
                 document.getElementById('regenerate').addEventListener('click', () => {
@@ -381,8 +578,8 @@
                     setTimeout(() => this.generateGalaxy(), 100);
                 });
                 
-                document.getElementById('toggleNebula').addEventListener('click', () => {
-                    this.showNebula = !this.showNebula;
+                document.getElementById('nebulaToggle').addEventListener('change', (e) => {
+                    this.showNebula = e.target.checked;
                     if (this.showNebula) {
                         this.createNebula();
                     } else if (this.nebula) {
@@ -399,11 +596,43 @@
                 });
             }
             
+            updateRotationSliders() {
+                // Конвертируем радианы в градусы и ограничиваем диапазон -180 до 180
+                const toDegrees = (radians) => {
+                    let degrees = radians * 180 / Math.PI;
+                    // Нормализуем в диапазон -180 до 180
+                    degrees = ((degrees + 180) % 360) - 180;
+                    return Math.round(degrees);
+                };
+                
+                const xDegrees = toDegrees(this.galaxyGroup.rotation.x);
+                const yDegrees = toDegrees(this.galaxyGroup.rotation.y);
+                const zDegrees = toDegrees(this.galaxyGroup.rotation.z);
+                
+                document.getElementById('rotationXSlider').value = xDegrees;
+                document.getElementById('rotationXValue').textContent = xDegrees;
+                
+                document.getElementById('rotationYSlider').value = yDegrees;
+                document.getElementById('rotationYValue').textContent = yDegrees;
+                
+                document.getElementById('rotationZSlider').value = zDegrees;
+                document.getElementById('rotationZValue').textContent = zDegrees;
+            }
+            
             animate() {
                 requestAnimationFrame(() => this.animate());
                 
-                // Auto rotation
-                this.galaxyGroup.rotation.y += this.rotationSpeed;
+                // Auto rotation around galaxy's own local Y-axis (perpendicular to galactic disk)
+                // This rotates around the galaxy's local Y axis, not the global screen Y axis
+                if (this.rotationSpeed > 0) {
+                    const localYAxis = new THREE.Vector3(0, 1, 0);
+                    this.galaxyGroup.rotateOnAxis(localYAxis, this.rotationSpeed);
+                }
+                
+                // Update rotation sliders to reflect current rotation
+                if (this.rotationSpeed > 0) {
+                    this.updateRotationSliders();
+                }
                 
                 // Gentle star twinkling
                 this.stars.forEach((star, index) => {
