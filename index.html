@@ -341,10 +341,21 @@
                         const radius = (20 + t * 150) * this.galaxySize;
                         const angle = armAngle + t * Math.PI * this.spiralTightness * 2 + Math.random() * 0.5 * this.chaosLevel;
                         
-                        const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
-                        const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
-                        // Делаем амплитуду Y пропорциональной радиусу, как в ядре
-                        const maxY = radius * 0.3; // Примерно такая же пропорция как в ядре
+                        // Создаем толщину рукава - звезды распределяются вокруг центральной линии
+                        const armWidth = (10 + t * 15) * this.galaxySize; // Ширина рукава увеличивается к краю
+                        const offsetDistance = (Math.random() - 0.5) * armWidth;
+                        const offsetAngle = angle + Math.PI / 2; // Перпендикулярно к направлению рукава
+                        
+                        // Основная позиция на рукаве
+                        const baseX = Math.cos(angle) * radius;
+                        const baseZ = Math.sin(angle) * radius;
+                        
+                        // Добавляем смещение для создания толщины
+                        const x = baseX + Math.cos(offsetAngle) * offsetDistance + (Math.random() - 0.5) * 15 * this.chaosLevel;
+                        const z = baseZ + Math.sin(offsetAngle) * offsetDistance + (Math.random() - 0.5) * 15 * this.chaosLevel;
+                        
+                        // Y-координата остается как была
+                        const maxY = radius * 0.3;
                         const y = (Math.random() - 0.5) * maxY * this.flattening;
                         
                         this.createStar(x, y, z, this.getStarColor(t), Math.random() * 2 + 0.5);
