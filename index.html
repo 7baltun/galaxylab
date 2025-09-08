@@ -135,13 +135,15 @@
                 width: 100%;
                 max-width: 350px;
                 height: 100vh;
-                max-height: none;
+                max-height: 100vh;
                 overflow-y: auto;
-                padding: 20px;
+                overflow-x: hidden;
+                padding: 80px 20px 20px 20px; /* Увеличен верхний отступ для кнопки закрытия */
                 transition: right 0.3s ease-in-out;
                 border-radius: 0;
                 box-sizing: border-box;
                 background: rgba(0,0,0,0.95);
+                -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
             }
             
             #controls.open {
@@ -154,11 +156,15 @@
                 left: 0;
                 width: 100%;
                 max-width: 350px;
+                max-height: 60vh; /* Ограничиваем высоту */
+                overflow-y: auto;
+                overflow-x: hidden;
                 padding: 20px;
                 transition: top 0.3s ease-in-out;
                 border-radius: 0 0 10px 10px;
                 box-sizing: border-box;
                 background: rgba(0,0,0,0.95);
+                -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
             }
             
             #info.open {
@@ -175,12 +181,79 @@
             input[type="range"] {
                 width: 100%;
                 max-width: 300px;
+                height: 40px; /* Увеличиваем высоту для лучшего touch */
+                -webkit-appearance: none;
+                appearance: none;
+                background: transparent;
+                cursor: pointer;
+            }
+            
+            /* Стилизуем слайдер для touch */
+            input[type="range"]::-webkit-slider-track {
+                background: #333;
+                height: 6px;
+                border-radius: 3px;
+            }
+            
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                height: 25px;
+                width: 25px;
+                border-radius: 50%;
+                background: #4a90e2;
+                cursor: pointer;
+                margin-top: -10px;
+            }
+            
+            input[type="range"]::-moz-range-track {
+                background: #333;
+                height: 6px;
+                border-radius: 3px;
+                border: none;
+            }
+            
+            input[type="range"]::-moz-range-thumb {
+                height: 25px;
+                width: 25px;
+                border-radius: 50%;
+                background: #4a90e2;
+                cursor: pointer;
+                border: none;
+            }
+            
+            input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                margin-right: 8px;
+                transform: scale(1.5); /* Увеличиваем для touch */
             }
             
             button {
                 width: 100%;
-                padding: 12px;
+                padding: 15px; /* Увеличиваем для touch */
                 font-size: 16px;
+                min-height: 48px; /* Минимальная высота для touch */
+                touch-action: manipulation; /* Убираем задержку на touch */
+            }
+            
+            /* Кнопка закрытия в мобильном меню */
+            .mobile-close {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                font-size: 20px;
+                width: 40px;
+                height: 40px;
+                border-radius: 20px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
             }
             
             /* Увеличиваем размер текста для мобильных */
@@ -218,6 +291,7 @@
         <div class="overlay" id="overlay"></div>
         
         <div id="info">
+            <button class="mobile-close" id="infoClose">✕</button>
             <h3>🌌 3D Galaxy Explorer</h3>
             <p>Звезд: <span id="starCount">0</span></p>
             <p>Расстояние: <span id="distance">0</span></p>
@@ -232,6 +306,7 @@
         </div>
         
         <div id="controls">
+            <button class="mobile-close" id="controlsClose">✕</button>
             <div class="control-item">
                 <label>Скорость вращения:</label>
                 <input type="range" id="rotationSpeed" min="0" max="2" step="0.1" value="0.5">
@@ -430,6 +505,87 @@
                     this.camera.position.setFromSpherical(spherical);
                     
                     document.getElementById('distance').textContent = Math.round(this.cameraDistance);
+                });
+                
+                // Touch поддержка для мобильных устройств
+                this.setupTouchControls(canvas);
+            }
+            
+            setupTouchControls(canvas) {
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let isTouching = false;
+                let touchCount = 0;
+                let lastTouchDistance = 0;
+                
+                canvas.addEventListener('touchstart', (event) => {
+                    event.preventDefault();
+                    touchCount = event.touches.length;
+                    
+                    if (touchCount === 1) {
+                        isTouching = true;
+                        touchStartX = event.touches[0].clientX;
+                        touchStartY = event.touches[0].clientY;
+                    } else if (touchCount === 2) {
+                        // Pinch для масштабирования
+                        const touch1 = event.touches[0];
+                        const touch2 = event.touches[1];
+                        lastTouchDistance = Math.sqrt(
+                            Math.pow(touch2.clientX - touch1.clientX, 2) +
+                            Math.pow(touch2.clientY - touch1.clientY, 2)
+                        );
+                    }
+                });
+                
+                canvas.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    isTouching = false;
+                    touchCount = event.touches.length;
+                });
+                
+                canvas.addEventListener('touchmove', (event) => {
+                    event.preventDefault();
+                    
+                    if (touchCount === 1 && isTouching) {
+                        // Одиночное касание - вращение
+                        const deltaX = event.touches[0].clientX - touchStartX;
+                        const deltaY = event.touches[0].clientY - touchStartY;
+                        
+                        // Обычное вращение вокруг глобальных экранных осей
+                        const screenYAxis = new THREE.Vector3(0, 1, 0);
+                        const screenXAxis = new THREE.Vector3(1, 0, 0);
+                        
+                        this.galaxyGroup.rotateOnWorldAxis(screenYAxis, deltaX * 0.01);
+                        this.galaxyGroup.rotateOnWorldAxis(screenXAxis, deltaY * 0.01);
+                        
+                        this.updateRotationSliders();
+                        
+                        touchStartX = event.touches[0].clientX;
+                        touchStartY = event.touches[0].clientY;
+                    } else if (touchCount === 2) {
+                        // Pinch для масштабирования
+                        const touch1 = event.touches[0];
+                        const touch2 = event.touches[1];
+                        const currentDistance = Math.sqrt(
+                            Math.pow(touch2.clientX - touch1.clientX, 2) +
+                            Math.pow(touch2.clientY - touch1.clientY, 2)
+                        );
+                        
+                        if (lastTouchDistance > 0) {
+                            const deltaDistance = currentDistance - lastTouchDistance;
+                            this.cameraDistance -= deltaDistance * 2;
+                            this.cameraDistance = Math.max(50, Math.min(800, this.cameraDistance));
+                            
+                            const spherical = new THREE.Spherical();
+                            spherical.setFromVector3(this.camera.position);
+                            spherical.radius = this.cameraDistance;
+                            this.camera.position.setFromSpherical(spherical);
+                            
+                            document.getElementById('distance').textContent = Math.round(this.cameraDistance);
+                        }
+                        
+                        lastTouchDistance = currentDistance;
+                    }
                 });
             }
             
@@ -799,13 +955,21 @@
         const controls = document.getElementById('controls');
         const info = document.getElementById('info');
         const overlay = document.getElementById('overlay');
+        const controlsClose = document.getElementById('controlsClose');
+        const infoClose = document.getElementById('infoClose');
+        
+        // Функция закрытия всех меню
+        const closeAllMenus = () => {
+            controls.classList.remove('open');
+            info.classList.remove('open');
+            overlay.classList.remove('active');
+        };
         
         // Открытие/закрытие меню управления
         mobileMenuToggle.addEventListener('click', () => {
             const isOpen = controls.classList.contains('open');
             if (isOpen) {
-                controls.classList.remove('open');
-                overlay.classList.remove('active');
+                closeAllMenus();
             } else {
                 controls.classList.add('open');
                 overlay.classList.add('active');
@@ -818,8 +982,7 @@
         mobileInfoToggle.addEventListener('click', () => {
             const isOpen = info.classList.contains('open');
             if (isOpen) {
-                info.classList.remove('open');
-                overlay.classList.remove('active');
+                closeAllMenus();
             } else {
                 info.classList.add('open');
                 overlay.classList.add('active');
@@ -828,19 +991,17 @@
             }
         });
         
+        // Кнопки закрытия в меню
+        controlsClose.addEventListener('click', closeAllMenus);
+        infoClose.addEventListener('click', closeAllMenus);
+        
         // Закрытие меню по клику на overlay
-        overlay.addEventListener('click', () => {
-            controls.classList.remove('open');
-            info.classList.remove('open');
-            overlay.classList.remove('active');
-        });
+        overlay.addEventListener('click', closeAllMenus);
         
         // Закрытие меню по ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                controls.classList.remove('open');
-                info.classList.remove('open');
-                overlay.classList.remove('active');
+                closeAllMenus();
             }
         });
     </script>
