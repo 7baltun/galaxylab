@@ -86,11 +86,137 @@
             z-index: 200;
             display: none;
         }
+        
+        /* Мобильное меню */
+        #mobileMenuToggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        
+        #mobileInfoToggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            border: none;
+            color: white;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Медиа-запросы для мобильных устройств */
+        @media (max-width: 768px) {
+            #mobileMenuToggle, #mobileInfoToggle {
+                display: block;
+            }
+            
+            #controls {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 100%;
+                max-width: 350px;
+                height: 100vh;
+                max-height: none;
+                overflow-y: auto;
+                padding: 20px;
+                transition: right 0.3s ease-in-out;
+                border-radius: 0;
+                box-sizing: border-box;
+                background: rgba(0,0,0,0.95);
+            }
+            
+            #controls.open {
+                right: 0;
+            }
+            
+            #info {
+                position: fixed;
+                top: -100%;
+                left: 0;
+                width: 100%;
+                max-width: 350px;
+                padding: 20px;
+                transition: top 0.3s ease-in-out;
+                border-radius: 0 0 10px 10px;
+                box-sizing: border-box;
+                background: rgba(0,0,0,0.95);
+            }
+            
+            #info.open {
+                top: 0;
+            }
+            
+            .control-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+                margin: 10px 0;
+            }
+            
+            input[type="range"] {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            button {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+            
+            /* Увеличиваем размер текста для мобильных */
+            label {
+                font-size: 14px;
+            }
+            
+            /* Overlay для закрытия меню */
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 900;
+            }
+            
+            .overlay.active {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="container">
         <div id="loading">Генерация галактики...</div>
+        
+        <!-- Мобильные кнопки -->
+        <button id="mobileInfoToggle">ℹ️</button>
+        <button id="mobileMenuToggle">☰</button>
+        
+        <!-- Overlay для закрытия меню -->
+        <div class="overlay" id="overlay"></div>
+        
         <div id="info">
             <h3>🌌 3D Galaxy Explorer</h3>
             <p>Звезд: <span id="starCount">0</span></p>
@@ -666,6 +792,57 @@
         
         // Initialize galaxy
         const galaxy = new Galaxy3D();
+        
+        // Мобильное меню
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const mobileInfoToggle = document.getElementById('mobileInfoToggle');
+        const controls = document.getElementById('controls');
+        const info = document.getElementById('info');
+        const overlay = document.getElementById('overlay');
+        
+        // Открытие/закрытие меню управления
+        mobileMenuToggle.addEventListener('click', () => {
+            const isOpen = controls.classList.contains('open');
+            if (isOpen) {
+                controls.classList.remove('open');
+                overlay.classList.remove('active');
+            } else {
+                controls.classList.add('open');
+                overlay.classList.add('active');
+                // Закрываем info если открыто
+                info.classList.remove('open');
+            }
+        });
+        
+        // Открытие/закрытие информационного блока
+        mobileInfoToggle.addEventListener('click', () => {
+            const isOpen = info.classList.contains('open');
+            if (isOpen) {
+                info.classList.remove('open');
+                overlay.classList.remove('active');
+            } else {
+                info.classList.add('open');
+                overlay.classList.add('active');
+                // Закрываем controls если открыто
+                controls.classList.remove('open');
+            }
+        });
+        
+        // Закрытие меню по клику на overlay
+        overlay.addEventListener('click', () => {
+            controls.classList.remove('open');
+            info.classList.remove('open');
+            overlay.classList.remove('active');
+        });
+        
+        // Закрытие меню по ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                controls.classList.remove('open');
+                info.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
