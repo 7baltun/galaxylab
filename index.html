@@ -98,6 +98,10 @@
                 <input type="range" id="starSize" min="0.5" max="3" step="0.1" value="1">
             </div>
             <div class="control-item">
+                <label>Количество звезд: <span id="starCountValue">8000</span></label>
+                <input type="range" id="starCountSlider" min="0" max="15000" step="100" value="8000">
+            </div>
+            <div class="control-item">
                 <button id="regenerate">Новая галактика</button>
             </div>
             <div class="control-item">
@@ -122,6 +126,8 @@
                 this.rotationSpeed = 0.005;
                 this.starSize = 1;
                 this.showNebula = true;
+                this.totalStarCount = 8000;
+                this.regenerateTimeout = null;
                 
                 this.init();
                 this.generateGalaxy();
@@ -222,7 +228,9 @@
             
             createSpiralArms() {
                 const armCount = 4;
-                const starsPerArm = 3000;
+                // Распределяем 60% от общего количества звезд между спиральными рукавами
+                const totalSpiralStars = Math.floor(this.totalStarCount * 0.6);
+                const starsPerArm = Math.floor(totalSpiralStars / armCount);
                 
                 for (let arm = 0; arm < armCount; arm++) {
                     const armAngle = (arm / armCount) * Math.PI * 2;
@@ -242,7 +250,8 @@
             }
             
             createGalacticCore() {
-                const coreStars = 2000;
+                // 25% от общего количества звезд в ядре
+                const coreStars = Math.floor(this.totalStarCount * 0.25);
                 
                 for (let i = 0; i < coreStars; i++) {
                     const phi = Math.random() * Math.PI * 2;
@@ -258,7 +267,8 @@
             }
             
             createHalo() {
-                const haloStars = 1500;
+                // 15% от общего количества звезд в гало
+                const haloStars = Math.floor(this.totalStarCount * 0.15);
                 
                 for (let i = 0; i < haloStars; i++) {
                     const phi = Math.random() * Math.PI * 2;
@@ -338,6 +348,22 @@
                 document.getElementById('starSize').addEventListener('input', (e) => {
                     this.starSize = parseFloat(e.target.value);
                     this.updateStarSizes();
+                });
+                
+                document.getElementById('starCountSlider').addEventListener('input', (e) => {
+                    this.totalStarCount = parseInt(e.target.value);
+                    document.getElementById('starCountValue').textContent = this.totalStarCount;
+                    
+                    // Очищаем предыдущий таймер
+                    if (this.regenerateTimeout) {
+                        clearTimeout(this.regenerateTimeout);
+                    }
+                    
+                    // Устанавливаем новый таймер с задержкой в 1 секунду
+                    this.regenerateTimeout = setTimeout(() => {
+                        document.getElementById('loading').style.display = 'block';
+                        setTimeout(() => this.generateGalaxy(), 100);
+                    }, 1000);
                 });
                 
                 document.getElementById('starCount').addEventListener('input', (e) => {
