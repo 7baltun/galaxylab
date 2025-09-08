@@ -344,7 +344,9 @@
                         
                         const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
                         const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 20 * this.chaosLevel;
-                        const y = (Math.random() - 0.5) * 10 * (1 - t * 0.7) * this.flattening;
+                        // Делаем амплитуду Y пропорциональной радиусу, как в ядре
+                        const maxY = radius * 0.3; // Примерно такая же пропорция как в ядре
+                        const y = (Math.random() - 0.5) * maxY * this.flattening;
                         
                         this.createStar(x, y, z, this.getStarColor(t), Math.random() * 2 + 0.5);
                     }
